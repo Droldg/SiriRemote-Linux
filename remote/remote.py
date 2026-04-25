@@ -8,7 +8,7 @@ class RemoteListener:
     def event_connected(self):
         pass
 
-    def event_disconnected(self):
+    def event_disconnected(self, reason: str = None):
         pass
 
     def event_error(self, message: str):
@@ -54,53 +54,66 @@ class SiriRemote:
         self.__device = None
         self.__listener = listener
         self.__connected = None
+        self.__last_disconnect_reason = None
         self.__debug = os.environ.get("SIRIREMOTE_DEBUG") == "1"
         self.__setup()
 
     def __setup(self):
         while True:
+            setup_step = "connecting"
             try:
                 self.__debug_log("connecting")
                 self.__device = bt.Device(self.__mac)
                 self.__device.connect()
-                self.__set_connected(True)
+                setup_step = "setting mtu"
                 self.__debug_log("setting mtu")
                 self.__device.set_mtu(104)
                 self.__device.set_listener(self.__handle_notification)
+                setup_step = "enabling hid notifications"
                 self.__debug_log("enabling hid notifications")
                 self.__device.enable_notifications(0x0024)  # hid service
+                setup_step = "sending magic byte"
                 self.__debug_log("sending magic byte")
                 self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
+                setup_step = "enabling battery notifications"
                 self.__debug_log("enabling battery notifications")
                 self.__device.enable_notifications(0x0029)  # battery service
+                setup_step = "enabling power notifications"
                 self.__debug_log("enabling power notifications")
                 self.__device.enable_notifications(0x002c)  # power service
+                setup_step = "listening"
                 self.__debug_log("listening")
+                self.__set_connected(True)
                 self.__device.loop()
             except (BTLEDisconnectError, BTLEException) as error:
-                self.__debug_log(f"bluetooth error: {error}")
+                reason = f"{setup_step}: {error}"
+                self.__debug_log(f"bluetooth error: {reason}")
                 if self.__device:
                     self.__device.disconnect()
-                self.__set_connected(False)
+                self.__set_connected(False, reason)
                 self.__listener.event_button(0)  # release all keys
                 time.sleep(0.5)
 
-    def __set_connected(self, connected: bool):
+    def __set_connected(self, connected: bool, reason: str = None):
         if self.__connected == connected:
+            if not connected and reason and reason != self.__last_disconnect_reason:
+                self.__last_disconnect_reason = reason
+                self.__listener.event_disconnected(reason)
             return
 
         self.__connected = connected
         if connected:
+            self.__last_disconnect_reason = None
             self.__listener.event_connected()
         else:
-            self.__listener.event_disconnected()
+            self.__last_disconnect_reason = reason
+            self.__listener.event_disconnected(reason)
 
     def __debug_log(self, message: str):
         if self.__debug:
             self.__listener.event_error(message)
 
     def __handle_notification(self, handle, data):
-        self.__set_connected(True)
         self.__debug_log(f"notification handle={handle} data={data.hex()}")
 
         if handle == self.__HANDLE_BATTERY:

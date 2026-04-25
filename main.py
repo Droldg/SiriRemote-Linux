@@ -9,8 +9,11 @@ class Callback(RemoteListener):
     def event_connected(self):
         print("Fjernbetjening forbundet", flush=True)
 
-    def event_disconnected(self):
-        print("Fjernbetjening ikke forbundet", flush=True)
+    def event_disconnected(self, reason: str = None):
+        if reason:
+            print("Fjernbetjening ikke forbundet:", reason, flush=True)
+        else:
+            print("Fjernbetjening ikke forbundet", flush=True)
 
     def event_error(self, message: str):
         print("Debug:", message, flush=True)

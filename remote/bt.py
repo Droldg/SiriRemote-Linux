@@ -11,6 +11,7 @@ class Device(DefaultDelegate):
     def connect(self):
         self.__peripheral = Peripheral(self.mac)
         self.__peripheral.withDelegate(self)
+        self.__peripheral.getServices()
 
     def disconnect(self):
         if self.__peripheral:
