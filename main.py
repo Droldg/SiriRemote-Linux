@@ -116,8 +116,9 @@ if __name__ == '__main__':
         if len(sys.argv) > 1:
             generation = "gen3" if "--gen3" in sys.argv else "gen1"
             magic_with_response = "--no-magic-response" not in sys.argv
+            addr_type = "random" if "--addr-type=random" in sys.argv else "public"
             mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
-            SiriRemote(mac, Callback(generation), generation, magic_with_response)
+            SiriRemote(mac, Callback(generation), generation, magic_with_response, addr_type)
         else:
             print("error: no mac address")
     except KeyboardInterrupt:

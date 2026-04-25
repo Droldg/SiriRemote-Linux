@@ -75,9 +75,11 @@ class SiriRemote:
             mac,
             listener: RemoteListener,
             generation: str = "gen1",
-            magic_with_response: bool = True
+            magic_with_response: bool = True,
+            addr_type: str = "public"
     ):
         self.__mac = mac
+        self.__addr_type = addr_type
         self.__device = None
         self.__listener = listener
         self.__generation = generation
@@ -85,6 +87,7 @@ class SiriRemote:
         self.__magic_with_response = magic_with_response
         self.__connected = None
         self.__last_disconnect_reason = None
+        self.__same_disconnect_count = 0
         self.__debug = os.environ.get("SIRIREMOTE_DEBUG") == "1"
         self.__setup()
 
@@ -102,7 +105,7 @@ class SiriRemote:
             setup_step = "connecting"
             try:
                 self.__debug_log("connecting")
-                self.__device = bt.Device(self.__mac)
+                self.__device = bt.Device(self.__mac, self.__addr_type)
                 self.__device.connect()
                 setup_step = "setting mtu"
                 self.__debug_log("setting mtu")
@@ -142,15 +145,24 @@ class SiriRemote:
         if self.__connected == connected:
             if not connected and reason and reason != self.__last_disconnect_reason:
                 self.__last_disconnect_reason = reason
+                self.__same_disconnect_count = 1
                 self.__listener.event_disconnected(reason)
+            elif not connected and reason:
+                self.__same_disconnect_count += 1
+                if self.__same_disconnect_count % 10 == 0:
+                    self.__listener.event_disconnected(
+                        f"{reason} (gentaget {self.__same_disconnect_count} gange)"
+                    )
             return
 
         self.__connected = connected
         if connected:
             self.__last_disconnect_reason = None
+            self.__same_disconnect_count = 0
             self.__listener.event_connected()
         else:
             self.__last_disconnect_reason = reason
+            self.__same_disconnect_count = 1
             self.__listener.event_disconnected(reason)
 
     def __debug_log(self, message: str):

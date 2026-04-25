@@ -2,14 +2,15 @@ from bluepy.btle import Peripheral, DefaultDelegate
 
 
 class Device(DefaultDelegate):
-    def __init__(self, mac):
+    def __init__(self, mac, addr_type="public"):
         super().__init__()
         self.mac = mac
+        self.addr_type = addr_type
         self.__peripheral = None
         self.__listener = None
 
     def connect(self):
-        self.__peripheral = Peripheral(self.mac)
+        self.__peripheral = Peripheral(self.mac, self.addr_type)
         self.__peripheral.withDelegate(self)
 
     def disconnect(self):
