@@ -6,6 +6,12 @@ hid_input = Input()
 
 
 class Callback(RemoteListener):
+    def event_connected(self):
+        print("Fjernbetjening forbundet", flush=True)
+
+    def event_disconnected(self):
+        print("Fjernbetjening ikke forbundet", flush=True)
+
     def event_battery(self, percent: int):
         print("Battery", percent)
 

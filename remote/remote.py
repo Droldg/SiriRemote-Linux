@@ -4,6 +4,12 @@ from . import bt
 
 
 class RemoteListener:
+    def event_connected(self):
+        pass
+
+    def event_disconnected(self):
+        pass
+
     def event_battery(self, percent: int):
         pass
 
@@ -53,8 +59,10 @@ class SiriRemote:
             self.__device.enable_notifications(0x002c)  # power service
             self.__device.enable_notifications(0x0024)  # hid service
             self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
+            self.__listener.event_connected()
             self.__device.loop()
         except BTLEDisconnectError:
+            self.__listener.event_disconnected()
             self.__listener.event_button(0)  # release all keys
             time.sleep(0.5)
             self.__setup()
