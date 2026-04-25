@@ -125,6 +125,10 @@ if __name__ == '__main__':
                 (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
                 5.0
             )
+            magic_value = next(
+                (bytes.fromhex(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--magic=")),
+                None
+            )
             mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
             SiriRemote(
                 mac,
@@ -132,7 +136,8 @@ if __name__ == '__main__':
                 generation,
                 magic_with_response,
                 addr_type,
-                scan_timeout
+                scan_timeout,
+                magic_value
             )
         else:
             print("error: no mac address")

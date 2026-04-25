@@ -77,7 +77,8 @@ class SiriRemote:
             generation: str = "gen1",
             magic_with_response: bool = True,
             addr_type: str = "public",
-            scan_timeout: float = 5.0
+            scan_timeout: float = 5.0,
+            magic_value: bytes = None
     ):
         self.__mac = mac
         self.__addr_type = addr_type
@@ -87,6 +88,7 @@ class SiriRemote:
         self.__generation = generation
         self.__profile = self.__get_profile(generation)
         self.__magic_with_response = magic_with_response
+        self.__magic_value = magic_value or self.__profile["magic_value"]
         self.__connected = None
         self.__last_disconnect_reason = None
         self.__same_disconnect_count = 0
@@ -127,7 +129,7 @@ class SiriRemote:
                 self.__debug_log("sending magic byte")
                 self.__device.write_characteristic(
                     self.__profile["magic_handle"],
-                    self.__profile["magic_value"],
+                    self.__magic_value,
                     self.__magic_with_response
                 )  # "magic" byte
                 setup_step = "listening"
@@ -141,7 +143,7 @@ class SiriRemote:
                     self.__device.disconnect()
                 self.__set_connected(False, reason)
                 self.__listener.event_button(0)  # release all keys
-                time.sleep(0.5)
+                time.sleep(2.0)
 
     def __set_connected(self, connected: bool, reason: str = None):
         if self.__connected == connected:
