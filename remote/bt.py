@@ -1,17 +1,25 @@
-from bluepy.btle import Peripheral, DefaultDelegate
+from bluepy.btle import Peripheral, DefaultDelegate, Scanner
 
 
 class Device(DefaultDelegate):
-    def __init__(self, mac, addr_type="public"):
+    def __init__(self, mac, addr_type="public", scan_timeout=5.0):
         super().__init__()
         self.mac = mac
         self.addr_type = addr_type
+        self.scan_timeout = scan_timeout
         self.__peripheral = None
         self.__listener = None
 
     def connect(self):
+        self.__wait_until_seen()
         self.__peripheral = Peripheral(self.mac, self.addr_type)
         self.__peripheral.withDelegate(self)
+
+    def __wait_until_seen(self):
+        scanner = Scanner()
+        for device in scanner.scan(self.scan_timeout):
+            if device.addr.lower() == self.mac.lower():
+                return
 
     def disconnect(self):
         if self.__peripheral:

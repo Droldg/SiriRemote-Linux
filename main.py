@@ -117,8 +117,19 @@ if __name__ == '__main__':
             generation = "gen3" if "--gen3" in sys.argv else "gen1"
             magic_with_response = "--no-magic-response" not in sys.argv
             addr_type = "random" if "--addr-type=random" in sys.argv else "public"
+            scan_timeout = next(
+                (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
+                5.0
+            )
             mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
-            SiriRemote(mac, Callback(generation), generation, magic_with_response, addr_type)
+            SiriRemote(
+                mac,
+                Callback(generation),
+                generation,
+                magic_with_response,
+                addr_type,
+                scan_timeout
+            )
         else:
             print("error: no mac address")
     except KeyboardInterrupt:
