@@ -1,4 +1,5 @@
 import sys
+import os
 from remote.remote import SiriRemote, RemoteListener
 from input.hid_input import Input
 
@@ -114,6 +115,9 @@ def handle_gen3_button_event(button):
 if __name__ == '__main__':
     try:
         if len(sys.argv) > 1:
+            if "--debug" in sys.argv:
+                os.environ["SIRIREMOTE_DEBUG"] = "1"
+
             generation = "gen3" if "--gen3" in sys.argv else "gen1"
             magic_with_response = "--no-magic-response" not in sys.argv
             addr_type = "random" if "--addr-type=random" in sys.argv else "public"

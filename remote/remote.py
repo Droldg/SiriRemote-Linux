@@ -113,6 +113,12 @@ class SiriRemote:
                 self.__debug_log("setting mtu")
                 self.__device.set_mtu(self.__profile["mtu"])
                 self.__device.set_listener(self.__handle_notification)
+                setup_step = "enabling battery notifications"
+                self.__debug_log("enabling battery notifications")
+                self.__device.enable_notifications(self.__profile["notify_battery"])  # battery service
+                setup_step = "enabling power notifications"
+                self.__debug_log("enabling power notifications")
+                self.__device.enable_notifications(self.__profile["notify_power"])  # power service
                 setup_step = "enabling hid notifications"
                 self.__debug_log("enabling hid notifications")
                 for handle in self.__profile["notify_input"]:
@@ -124,12 +130,6 @@ class SiriRemote:
                     self.__profile["magic_value"],
                     self.__magic_with_response
                 )  # "magic" byte
-                setup_step = "enabling battery notifications"
-                self.__debug_log("enabling battery notifications")
-                self.__device.enable_notifications(self.__profile["notify_battery"])  # battery service
-                setup_step = "enabling power notifications"
-                self.__debug_log("enabling power notifications")
-                self.__device.enable_notifications(self.__profile["notify_power"])  # power service
                 setup_step = "listening"
                 self.__debug_log("listening")
                 self.__set_connected(True)
@@ -193,6 +193,8 @@ class SiriRemote:
             self.__listener.event_power(False)
 
     def __handle_input(self, data):
+        self.__debug_log(f"input data={data.hex()}")
+
         if self.__generation == "gen3":
             button = int.from_bytes(data, byteorder='little')
 
@@ -214,6 +216,8 @@ class SiriRemote:
             self.__handle_touchpad(data)
 
     def __handle_touchpad(self, data):
+        self.__debug_log(f"touch data={data.hex()}")
+
         if self.__generation == "gen3":
             if len(data) == 11:
                 self.__listener.event_touchpad([self.__decode_finger(data[4:11])], False)
