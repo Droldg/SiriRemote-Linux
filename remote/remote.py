@@ -55,13 +55,13 @@ class SiriRemote:
         while True:
             try:
                 self.__device.connect()
+                self.__set_connected(True)
                 self.__device.set_mtu(104)
                 self.__device.set_listener(self.__handle_notification)
                 self.__device.enable_notifications(0x0029)  # battery service
                 self.__device.enable_notifications(0x002c)  # power service
                 self.__device.enable_notifications(0x0024)  # hid service
                 self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
-                self.__set_connected(True)
                 self.__device.loop()
             except (BTLEDisconnectError, BTLEException):
                 self.__set_connected(False)
@@ -79,6 +79,8 @@ class SiriRemote:
             self.__listener.event_disconnected()
 
     def __handle_notification(self, handle, data):
+        self.__set_connected(True)
+
         if handle == self.__HANDLE_BATTERY:
             self.__handle_battery(data)
         elif handle == self.__HANDLE_POWER:
