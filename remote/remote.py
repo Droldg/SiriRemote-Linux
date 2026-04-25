@@ -143,7 +143,7 @@ class SiriRemote:
                     self.__device.disconnect()
                 self.__set_connected(False, reason)
                 self.__listener.event_button(0)  # release all keys
-                time.sleep(2.0)
+                time.sleep(0.5)
 
     def __set_connected(self, connected: bool, reason: str = None):
         if self.__connected == connected:

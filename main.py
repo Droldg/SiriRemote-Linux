@@ -121,10 +121,6 @@ if __name__ == '__main__':
             generation = "gen3" if "--gen3" in sys.argv else "gen1"
             magic_with_response = "--no-magic-response" not in sys.argv
             addr_type = "random" if "--addr-type=random" in sys.argv else "public"
-            scan_timeout = next(
-                (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
-                5.0
-            )
             magic_value = next(
                 (bytes.fromhex(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--magic=")),
                 None
@@ -136,7 +132,7 @@ if __name__ == '__main__':
                 generation,
                 magic_with_response,
                 addr_type,
-                scan_timeout,
+                5.0,
                 magic_value
             )
         else:
