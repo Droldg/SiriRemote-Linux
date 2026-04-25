@@ -46,7 +46,8 @@ class SiriRemote:
     __lastButton = 0
 
     def __init__(self, mac, listener: RemoteListener):
-        self.__device = bt.Device(mac)
+        self.__mac = mac
+        self.__device = None
         self.__listener = listener
         self.__connected = None
         self.__setup()
@@ -54,6 +55,7 @@ class SiriRemote:
     def __setup(self):
         while True:
             try:
+                self.__device = bt.Device(self.__mac)
                 self.__device.connect()
                 self.__set_connected(True)
                 self.__device.set_mtu(104)
@@ -64,6 +66,8 @@ class SiriRemote:
                 self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
                 self.__device.loop()
             except (BTLEDisconnectError, BTLEException):
+                if self.__device:
+                    self.__device.disconnect()
                 self.__set_connected(False)
                 self.__listener.event_button(0)  # release all keys
                 time.sleep(0.5)

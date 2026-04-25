@@ -12,9 +12,17 @@ class Device(DefaultDelegate):
         self.__peripheral = Peripheral(self.mac)
         self.__peripheral.withDelegate(self)
 
+    def disconnect(self):
+        if self.__peripheral:
+            try:
+                self.__peripheral.disconnect()
+            except Exception:
+                pass
+            self.__peripheral = None
+
     def loop(self):
         while True:
-            self.__peripheral.waitForNotifications(0)
+            self.__peripheral.waitForNotifications(1.0)
 
     def set_listener(self, listener):
         self.__listener = listener
