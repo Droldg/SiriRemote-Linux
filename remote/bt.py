@@ -11,7 +11,6 @@ class Device(DefaultDelegate):
     def connect(self):
         self.__peripheral = Peripheral(self.mac)
         self.__peripheral.withDelegate(self)
-        self.__peripheral.getServices()
 
     def disconnect(self):
         if self.__peripheral:
@@ -28,8 +27,8 @@ class Device(DefaultDelegate):
     def set_listener(self, listener):
         self.__listener = listener
 
-    def write_characteristic(self, handle, value):
-        self.__peripheral.writeCharacteristic(handle, value, True)
+    def write_characteristic(self, handle, value, with_response=True):
+        self.__peripheral.writeCharacteristic(handle, value, with_response)
 
     def enable_notifications(self, handle):
         self.__peripheral.writeCharacteristic(handle, b'\x01\x00')

@@ -70,12 +70,19 @@ class SiriRemote:
 
     __lastButton = 0
 
-    def __init__(self, mac, listener: RemoteListener, generation: str = "gen1"):
+    def __init__(
+            self,
+            mac,
+            listener: RemoteListener,
+            generation: str = "gen1",
+            magic_with_response: bool = True
+    ):
         self.__mac = mac
         self.__device = None
         self.__listener = listener
         self.__generation = generation
         self.__profile = self.__get_profile(generation)
+        self.__magic_with_response = magic_with_response
         self.__connected = None
         self.__last_disconnect_reason = None
         self.__debug = os.environ.get("SIRIREMOTE_DEBUG") == "1"
@@ -109,7 +116,8 @@ class SiriRemote:
                 self.__debug_log("sending magic byte")
                 self.__device.write_characteristic(
                     self.__profile["magic_handle"],
-                    self.__profile["magic_value"]
+                    self.__profile["magic_value"],
+                    self.__magic_with_response
                 )  # "magic" byte
                 setup_step = "enabling battery notifications"
                 self.__debug_log("enabling battery notifications")
