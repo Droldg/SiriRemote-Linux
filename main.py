@@ -6,6 +6,9 @@ hid_input = Input()
 
 
 class Callback(RemoteListener):
+    def __init__(self, generation: str):
+        self.generation = generation
+
     def event_connected(self):
         print("Fjernbetjening forbundet", flush=True)
 
@@ -25,7 +28,7 @@ class Callback(RemoteListener):
         pass
 
     def event_button(self, button: int):
-        handle_button_event(button)
+        handle_button_event(button, self.generation)
 
     def event_touchpad(self, data, pressed: bool):
         if len(data) == 2 and data[0][2] == 0:  # "ghost" finger with pressure 0
@@ -53,9 +56,13 @@ def handle_touchpad_event(data):
         prevXY[1] = y
 
 
-def handle_button_event(button):
+def handle_button_event(button, generation: str):
     if button == SiriRemote.BUTTON_RELEASED:
         hid_input.release()
+        return
+
+    if generation == "gen3":
+        handle_gen3_button_event(button)
         return
 
     if button & SiriRemote.BUTTON_AIRPLAY:
@@ -85,11 +92,31 @@ def handle_button_event(button):
     hid_input.press()
 
 
+def handle_gen3_button_event(button):
+    if button & 2:  # volume up
+        hid_input.add_key(Input.KEY_VOLUMEUP)
+
+    if button & 4:  # volume down
+        hid_input.add_key(Input.KEY_VOLUMEDOWN)
+
+    if button & 8:  # touchpad click
+        hid_input.add_key(Input.BTN_LEFT)
+
+    if button & 64:  # back
+        hid_input.add_key(Input.KEY_PREVIOUSSONG)
+
+    if button & 256:  # play/pause
+        hid_input.add_key(Input.KEY_PLAYPAUSE)
+
+    hid_input.press()
+
+
 if __name__ == '__main__':
     try:
         if len(sys.argv) > 1:
-            mac = sys.argv[1]
-            SiriRemote(mac, Callback())
+            generation = "gen3" if "--gen3" in sys.argv else "gen1"
+            mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
+            SiriRemote(mac, Callback(generation), generation)
         else:
             print("error: no mac address")
     except KeyboardInterrupt:
