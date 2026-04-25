@@ -39,19 +39,39 @@ class Callback(RemoteListener):
 
 
 prevXY = [None, None]
+smoothDelta = [0.0, 0.0]
+moveRemainder = [0.0, 0.0]
 
 
 def handle_touchpad_event(data):
-    sensi = 8
+    sensi = 5.0
+    smoothing = 0.35
     x = data[0] * sensi
-    y = data[1] * - sensi
+    y = data[1] * -sensi
     p = data[2]
 
     if prevXY[0] is not None and prevXY[1] is not None:
-        hid_input.move_cursor(x - prevXY[0], y - prevXY[1])
+        dx = x - prevXY[0]
+        dy = y - prevXY[1]
+
+        smoothDelta[0] = smoothDelta[0] * (1 - smoothing) + dx * smoothing
+        smoothDelta[1] = smoothDelta[1] * (1 - smoothing) + dy * smoothing
+
+        moveRemainder[0] += smoothDelta[0]
+        moveRemainder[1] += smoothDelta[1]
+
+        move_x = int(moveRemainder[0])
+        move_y = int(moveRemainder[1])
+
+        if move_x or move_y:
+            hid_input.move_cursor(move_x, move_y)
+            moveRemainder[0] -= move_x
+            moveRemainder[1] -= move_y
 
     if p == 0:
         prevXY[0] = prevXY[1] = None
+        smoothDelta[0] = smoothDelta[1] = 0.0
+        moveRemainder[0] = moveRemainder[1] = 0.0
     else:
         prevXY[0] = x
         prevXY[1] = y
