@@ -44,8 +44,8 @@ moveRemainder = [0.0, 0.0]
 
 
 def handle_touchpad_event(data):
-    sensi = 5.0
-    smoothing = 0.35
+    sensi = 8.0
+    smoothing = 0.50
     x = data[0] * sensi
     y = data[1] * -sensi
     p = data[2]
