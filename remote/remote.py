@@ -1,5 +1,5 @@
 import time
-from bluepy.btle import BTLEDisconnectError
+from bluepy.btle import BTLEDisconnectError, BTLEException
 from . import bt
 
 
@@ -48,24 +48,35 @@ class SiriRemote:
     def __init__(self, mac, listener: RemoteListener):
         self.__device = bt.Device(mac)
         self.__listener = listener
+        self.__connected = None
         self.__setup()
 
     def __setup(self):
-        try:
-            self.__device.connect()
-            self.__device.set_mtu(104)
-            self.__device.set_listener(self.__handle_notification)
-            self.__device.enable_notifications(0x0029)  # battery service
-            self.__device.enable_notifications(0x002c)  # power service
-            self.__device.enable_notifications(0x0024)  # hid service
-            self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
+        while True:
+            try:
+                self.__device.connect()
+                self.__device.set_mtu(104)
+                self.__device.set_listener(self.__handle_notification)
+                self.__device.enable_notifications(0x0029)  # battery service
+                self.__device.enable_notifications(0x002c)  # power service
+                self.__device.enable_notifications(0x0024)  # hid service
+                self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
+                self.__set_connected(True)
+                self.__device.loop()
+            except (BTLEDisconnectError, BTLEException):
+                self.__set_connected(False)
+                self.__listener.event_button(0)  # release all keys
+                time.sleep(0.5)
+
+    def __set_connected(self, connected: bool):
+        if self.__connected == connected:
+            return
+
+        self.__connected = connected
+        if connected:
             self.__listener.event_connected()
-            self.__device.loop()
-        except BTLEDisconnectError:
+        else:
             self.__listener.event_disconnected()
-            self.__listener.event_button(0)  # release all keys
-            time.sleep(0.5)
-            self.__setup()
 
     def __handle_notification(self, handle, data):
         if handle == self.__HANDLE_BATTERY:
