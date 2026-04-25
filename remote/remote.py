@@ -1,3 +1,4 @@
+import os
 import time
 from bluepy.btle import BTLEDisconnectError, BTLEException
 from . import bt
@@ -8,6 +9,9 @@ class RemoteListener:
         pass
 
     def event_disconnected(self):
+        pass
+
+    def event_error(self, message: str):
         pass
 
     def event_battery(self, percent: int):
@@ -50,22 +54,31 @@ class SiriRemote:
         self.__device = None
         self.__listener = listener
         self.__connected = None
+        self.__debug = os.environ.get("SIRIREMOTE_DEBUG") == "1"
         self.__setup()
 
     def __setup(self):
         while True:
             try:
+                self.__debug_log("connecting")
                 self.__device = bt.Device(self.__mac)
                 self.__device.connect()
                 self.__set_connected(True)
+                self.__debug_log("setting mtu")
                 self.__device.set_mtu(104)
                 self.__device.set_listener(self.__handle_notification)
-                self.__device.enable_notifications(0x0029)  # battery service
-                self.__device.enable_notifications(0x002c)  # power service
+                self.__debug_log("enabling hid notifications")
                 self.__device.enable_notifications(0x0024)  # hid service
+                self.__debug_log("sending magic byte")
                 self.__device.write_characteristic(0x001d, b'\xAF')  # "magic" byte
+                self.__debug_log("enabling battery notifications")
+                self.__device.enable_notifications(0x0029)  # battery service
+                self.__debug_log("enabling power notifications")
+                self.__device.enable_notifications(0x002c)  # power service
+                self.__debug_log("listening")
                 self.__device.loop()
-            except (BTLEDisconnectError, BTLEException):
+            except (BTLEDisconnectError, BTLEException) as error:
+                self.__debug_log(f"bluetooth error: {error}")
                 if self.__device:
                     self.__device.disconnect()
                 self.__set_connected(False)
@@ -82,8 +95,13 @@ class SiriRemote:
         else:
             self.__listener.event_disconnected()
 
+    def __debug_log(self, message: str):
+        if self.__debug:
+            self.__listener.event_error(message)
+
     def __handle_notification(self, handle, data):
         self.__set_connected(True)
+        self.__debug_log(f"notification handle={handle} data={data.hex()}")
 
         if handle == self.__HANDLE_BATTERY:
             self.__handle_battery(data)

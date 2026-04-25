@@ -12,11 +12,14 @@ class Callback(RemoteListener):
     def event_disconnected(self):
         print("Fjernbetjening ikke forbundet", flush=True)
 
+    def event_error(self, message: str):
+        print("Debug:", message, flush=True)
+
     def event_battery(self, percent: int):
-        print("Battery", percent)
+        pass
 
     def event_power(self, charging: bool):
-        print("Charging", charging)
+        pass
 
     def event_button(self, button: int):
         handle_button_event(button)
@@ -37,7 +40,7 @@ def handle_touchpad_event(data):
     y = data[1] * - sensi
     p = data[2]
 
-    if prevXY[0] and prevXY[1]:
+    if prevXY[0] is not None and prevXY[1] is not None:
         hid_input.move_cursor(x - prevXY[0], y - prevXY[1])
 
     if p == 0:
