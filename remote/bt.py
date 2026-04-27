@@ -25,6 +25,9 @@ class Device(DefaultDelegate):
         while True:
             self.__peripheral.waitForNotifications(1.0)
 
+    def wait_for_notifications(self, timeout):
+        return self.__peripheral.waitForNotifications(timeout)
+
     def set_listener(self, listener):
         self.__listener = listener
 

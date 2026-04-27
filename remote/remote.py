@@ -118,13 +118,16 @@ class SiriRemote:
                 setup_step = "enabling battery notifications"
                 self.__debug_log("enabling battery notifications")
                 self.__device.enable_notifications(self.__profile["notify_battery"])  # battery service
+                self.__drain_notifications()
                 setup_step = "enabling power notifications"
                 self.__debug_log("enabling power notifications")
                 self.__device.enable_notifications(self.__profile["notify_power"])  # power service
+                self.__drain_notifications()
                 setup_step = "enabling hid notifications"
                 self.__debug_log("enabling hid notifications")
                 for handle in self.__profile["notify_input"]:
                     self.__device.enable_notifications(handle)  # hid service
+                    self.__drain_notifications()
                 setup_step = "sending magic byte"
                 self.__debug_log("sending magic byte")
                 self.__device.write_characteristic(
@@ -132,6 +135,7 @@ class SiriRemote:
                     self.__magic_value,
                     self.__magic_with_response
                 )  # "magic" byte
+                self.__drain_notifications()
                 setup_step = "listening"
                 self.__debug_log("listening")
                 self.__set_connected(True)
@@ -172,6 +176,10 @@ class SiriRemote:
     def __debug_log(self, message: str):
         if self.__debug:
             self.__listener.event_error(message)
+
+    def __drain_notifications(self):
+        for _ in range(5):
+            self.__device.wait_for_notifications(0.05)
 
     def __handle_notification(self, handle, data):
         self.__debug_log(f"notification handle={handle} data={data.hex()}")

@@ -146,6 +146,7 @@ if __name__ == '__main__':
                 None
             )
             mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
+            print("Forbinder til fjernbetjening...", flush=True)
             SiriRemote(
                 mac,
                 Callback(generation),
