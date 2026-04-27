@@ -3,7 +3,7 @@ import os
 from remote.remote import SiriRemote, RemoteListener
 from input.hid_input import Input
 
-hid_input = Input()
+hid_input = None
 
 
 class Callback(RemoteListener):
@@ -135,8 +135,16 @@ def handle_gen3_button_event(button):
 if __name__ == '__main__':
     try:
         if len(sys.argv) > 1:
+            print("Starter SiriRemote-Linux...", flush=True)
+
             if "--debug" in sys.argv:
                 os.environ["SIRIREMOTE_DEBUG"] = "1"
+
+            try:
+                hid_input = Input()
+            except Exception as error:
+                print("Kunne ikke oprette virtuel input-enhed:", error, flush=True)
+                raise
 
             generation = "gen3" if "--gen3" in sys.argv else "gen1"
             magic_with_response = "--no-magic-response" not in sys.argv
@@ -159,5 +167,11 @@ if __name__ == '__main__':
         else:
             print("error: no mac address")
     except KeyboardInterrupt:
-        hid_input.close()
+        if hid_input:
+            hid_input.close()
         exit()
+    except Exception as error:
+        if hid_input:
+            hid_input.close()
+        print("Programmet stoppede med fejl:", error, flush=True)
+        raise
