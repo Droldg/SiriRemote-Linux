@@ -1,7 +1,7 @@
 import sys
 import time
 
-from bluepy.btle import DefaultDelegate, Peripheral
+from bluepy.btle import DefaultDelegate, Peripheral, Scanner
 
 
 class DebugDelegate(DefaultDelegate):
@@ -18,7 +18,24 @@ def main():
         (int(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--iface=")),
         0
     )
+    scan_timeout = next(
+        (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
+        15.0
+    )
     mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
+
+    print(f"scanning on hci{iface} for {scan_timeout} seconds")
+    seen = False
+    for scanned_device in Scanner(iface).scan(scan_timeout):
+        if scanned_device.addr.lower() == mac.lower():
+            seen = True
+            print(f"seen {mac} rssi={scanned_device.rssi}")
+            break
+
+    if not seen:
+        print(f"did not see {mac}; press a button on the remote and try again")
+
+    print(f"connecting on hci{iface}")
     device = Peripheral(mac, "public", iface)
     device.withDelegate(DebugDelegate())
 

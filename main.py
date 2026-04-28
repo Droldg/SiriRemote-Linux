@@ -153,6 +153,10 @@ if __name__ == '__main__':
                 (bytes.fromhex(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--magic=")),
                 None
             )
+            scan_timeout = next(
+                (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
+                15.0
+            )
             iface = next(
                 (int(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--iface=")),
                 0
@@ -165,7 +169,7 @@ if __name__ == '__main__':
                 generation,
                 magic_with_response,
                 addr_type,
-                5.0,
+                scan_timeout,
                 magic_value,
                 iface
             )
