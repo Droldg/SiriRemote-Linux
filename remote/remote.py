@@ -28,30 +28,16 @@ class RemoteListener:
 
 
 class SiriRemote:
-    __PROFILE_GEN1 = {
-        "mtu": 104,
-        "handle_input": 35,
-        "handle_touch": 35,
-        "handle_battery": 40,
-        "handle_power": 43,
-        "notify_input": (0x0024,),
-        "notify_battery": 0x0029,
-        "notify_power": 0x002c,
-        "magic_handle": 0x001d,
-        "magic_value": b'\xAF',
-    }
-    __PROFILE_GEN3 = {
-        "mtu": 247,
-        "handle_input": 57,
-        "handle_touch": 61,
-        "handle_battery": 46,
-        "handle_power": 49,
-        "notify_input": (0x003a, 0x003e),
-        "notify_battery": 0x002f,
-        "notify_power": 0x0032,
-        "magic_handle": 0x004d,
-        "magic_value": b'\xF0\x00',
-    }
+    __HANDLE_INPUT = 35
+    __HANDLE_BATTERY = 40
+    __HANDLE_POWER = 43
+
+    __NOTIFY_HID = 0x0024
+    __NOTIFY_BATTERY = 0x0029
+    __NOTIFY_POWER = 0x002c
+    __MAGIC_HANDLE = 0x001d
+    __MAGIC_VALUE = b'\xAF'
+    __MTU = 104
     __TOUCH_EVENT = 50
 
     __POWER_CHARGING = 171
@@ -70,74 +56,44 @@ class SiriRemote:
 
     __lastButton = 0
 
-    def __init__(
-            self,
-            mac,
-            listener: RemoteListener,
-            generation: str = "gen1",
-            magic_with_response: bool = True,
-            addr_type: str = "public",
-            scan_timeout: float = 5.0,
-            magic_value: bytes = None,
-            iface: int = 0
-    ):
+    def __init__(self, mac, listener: RemoteListener, iface: int = 0):
         self.__mac = mac
-        self.__addr_type = addr_type
-        self.__scan_timeout = scan_timeout
         self.__iface = iface
         self.__device = None
         self.__listener = listener
-        self.__generation = generation
-        self.__profile = self.__get_profile(generation)
-        self.__magic_with_response = magic_with_response
-        self.__magic_value = magic_value or self.__profile["magic_value"]
         self.__connected = None
         self.__last_disconnect_reason = None
         self.__same_disconnect_count = 0
         self.__debug = os.environ.get("SIRIREMOTE_DEBUG") == "1"
         self.__setup()
 
-    @classmethod
-    def __get_profile(cls, generation: str):
-        if generation == "gen1":
-            return cls.__PROFILE_GEN1
-        if generation == "gen3":
-            return cls.__PROFILE_GEN3
-
-        raise ValueError(f"unsupported Siri Remote generation: {generation}")
-
     def __setup(self):
         while True:
             setup_step = "connecting"
             try:
                 self.__debug_log("connecting")
-                self.__device = bt.Device(self.__mac, self.__addr_type, self.__scan_timeout, self.__iface)
+                self.__device = bt.Device(self.__mac, iface=self.__iface)
                 self.__device.connect()
                 self.__debug_log("connected")
                 setup_step = "setting mtu"
                 self.__debug_log("setting mtu")
-                self.__device.set_mtu(self.__profile["mtu"])
+                self.__device.set_mtu(self.__MTU)
                 self.__device.set_listener(self.__handle_notification)
                 setup_step = "enabling battery notifications"
                 self.__debug_log("enabling battery notifications")
-                self.__device.enable_notifications(self.__profile["notify_battery"])  # battery service
+                self.__device.enable_notifications(self.__NOTIFY_BATTERY)
                 self.__drain_notifications()
                 setup_step = "enabling power notifications"
                 self.__debug_log("enabling power notifications")
-                self.__device.enable_notifications(self.__profile["notify_power"])  # power service
+                self.__device.enable_notifications(self.__NOTIFY_POWER)
                 self.__drain_notifications()
                 setup_step = "enabling hid notifications"
                 self.__debug_log("enabling hid notifications")
-                for handle in self.__profile["notify_input"]:
-                    self.__device.enable_notifications(handle)  # hid service
-                    self.__drain_notifications()
+                self.__device.enable_notifications(self.__NOTIFY_HID)
+                self.__drain_notifications()
                 setup_step = "sending magic byte"
                 self.__debug_log("sending magic byte")
-                self.__device.write_characteristic(
-                    self.__profile["magic_handle"],
-                    self.__magic_value,
-                    self.__magic_with_response
-                )  # "magic" byte
+                self.__device.write_characteristic(self.__MAGIC_HANDLE, self.__MAGIC_VALUE)
                 self.__drain_notifications()
                 setup_step = "listening"
                 self.__debug_log("listening")
@@ -187,14 +143,12 @@ class SiriRemote:
     def __handle_notification(self, handle, data):
         self.__debug_log(f"notification handle={handle} data={data.hex()}")
 
-        if handle == self.__profile["handle_battery"]:
+        if handle == self.__HANDLE_BATTERY:
             self.__handle_battery(data)
-        elif handle == self.__profile["handle_power"]:
+        elif handle == self.__HANDLE_POWER:
             self.__handle_power(data)
-        elif handle == self.__profile["handle_input"]:
+        elif handle == self.__HANDLE_INPUT:
             self.__handle_input(data)
-        elif handle == self.__profile["handle_touch"]:
-            self.__handle_touchpad(data)
 
     def __handle_battery(self, data):
         self.__listener.event_battery(data[0])
@@ -207,15 +161,6 @@ class SiriRemote:
 
     def __handle_input(self, data):
         self.__debug_log(f"input data={data.hex()}")
-
-        if self.__generation == "gen3":
-            button = int.from_bytes(data, byteorder='little')
-
-            if button != self.__lastButton:
-                self.__lastButton = button
-                self.__listener.event_button(button)
-
-            return
 
         button = data[1]
         if data[0] == 2 and button & self.BUTTON_TOUCHPAD:
@@ -230,12 +175,6 @@ class SiriRemote:
 
     def __handle_touchpad(self, data):
         self.__debug_log(f"touch data={data.hex()}")
-
-        if self.__generation == "gen3":
-            if len(data) == 11:
-                self.__listener.event_touchpad([self.__decode_finger(data[4:11])], False)
-
-            return
 
         pressed = data[1] & self.BUTTON_TOUCHPAD
         if len(data) == 13:

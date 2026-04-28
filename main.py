@@ -7,9 +7,6 @@ hid_input = None
 
 
 class Callback(RemoteListener):
-    def __init__(self, generation: str):
-        self.generation = generation
-
     def event_connected(self):
         print("Fjernbetjening forbundet", flush=True)
 
@@ -29,7 +26,7 @@ class Callback(RemoteListener):
         pass
 
     def event_button(self, button: int):
-        handle_button_event(button, self.generation)
+        handle_button_event(button)
 
     def event_touchpad(self, data, pressed: bool):
         if len(data) == 2 and data[0][2] == 0:  # "ghost" finger with pressure 0
@@ -77,13 +74,9 @@ def handle_touchpad_event(data):
         prevXY[1] = y
 
 
-def handle_button_event(button, generation: str):
+def handle_button_event(button):
     if button == SiriRemote.BUTTON_RELEASED:
         hid_input.release()
-        return
-
-    if generation == "gen3":
-        handle_gen3_button_event(button)
         return
 
     if button & SiriRemote.BUTTON_AIRPLAY:
@@ -113,25 +106,6 @@ def handle_button_event(button, generation: str):
     hid_input.press()
 
 
-def handle_gen3_button_event(button):
-    if button & 2:  # volume up
-        hid_input.add_key(Input.KEY_VOLUMEUP)
-
-    if button & 4:  # volume down
-        hid_input.add_key(Input.KEY_VOLUMEDOWN)
-
-    if button & 8:  # touchpad click
-        hid_input.add_key(Input.BTN_LEFT)
-
-    if button & 64:  # back
-        hid_input.add_key(Input.KEY_PREVIOUSSONG)
-
-    if button & 256:  # play/pause
-        hid_input.add_key(Input.KEY_PLAYPAUSE)
-
-    hid_input.press()
-
-
 if __name__ == '__main__':
     try:
         if len(sys.argv) > 1:
@@ -146,33 +120,13 @@ if __name__ == '__main__':
                 print("Kunne ikke oprette virtuel input-enhed:", error, flush=True)
                 raise
 
-            generation = "gen3" if "--gen3" in sys.argv else "gen1"
-            magic_with_response = "--no-magic-response" not in sys.argv
-            addr_type = "random" if "--addr-type=random" in sys.argv else "public"
-            magic_value = next(
-                (bytes.fromhex(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--magic=")),
-                None
-            )
-            scan_timeout = next(
-                (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
-                0.0
-            )
             iface = next(
                 (int(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--iface=")),
                 0
             )
             mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
             print("Forbinder til fjernbetjening...", flush=True)
-            SiriRemote(
-                mac,
-                Callback(generation),
-                generation,
-                magic_with_response,
-                addr_type,
-                scan_timeout,
-                magic_value,
-                iface
-            )
+            SiriRemote(mac, Callback(), iface)
         else:
             print("error: no mac address")
     except KeyboardInterrupt:
