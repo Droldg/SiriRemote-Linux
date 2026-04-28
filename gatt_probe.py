@@ -24,21 +24,24 @@ def main():
     )
     mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
 
-    print(f"scanning on hci{iface} for {scan_timeout} seconds")
     seen = False
-    try:
-        for scanned_device in Scanner(iface).scan(scan_timeout):
-            if scanned_device.addr.lower() == mac.lower():
-                seen = True
-                print(f"seen {mac} rssi={scanned_device.rssi}")
-                break
-    except BTLEException as error:
-        print(f"scan failed on hci{iface}: {error}")
+    if scan_timeout > 0:
+        print(f"scanning on hci{iface} for {scan_timeout} seconds")
+        try:
+            for scanned_device in Scanner(iface).scan(scan_timeout):
+                if scanned_device.addr.lower() == mac.lower():
+                    seen = True
+                    print(f"seen {mac} rssi={scanned_device.rssi}")
+                    break
+        except BTLEException as error:
+            print(f"scan failed on hci{iface}: {error}")
 
-    if not seen:
-        print(f"did not see {mac}; press a button on the remote and try again")
-        print("not connecting because scan did not see the remote")
-        return
+        if not seen:
+            print(f"did not see {mac}; press a button on the remote and try again")
+            print("not connecting because scan did not see the remote")
+            return
+    else:
+        print("scan skipped")
 
     print(f"connecting on hci{iface}")
     device = Peripheral(mac, "public", iface)

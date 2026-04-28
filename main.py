@@ -155,7 +155,7 @@ if __name__ == '__main__':
             )
             scan_timeout = next(
                 (float(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--scan-timeout=")),
-                15.0
+                0.0
             )
             iface = next(
                 (int(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--iface=")),
