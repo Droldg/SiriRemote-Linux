@@ -1,4 +1,4 @@
-from bluepy.btle import Peripheral, DefaultDelegate, Scanner
+from bluepy.btle import BTLEDisconnectError, Peripheral, DefaultDelegate, Scanner
 
 
 class Device(DefaultDelegate):
@@ -13,7 +13,10 @@ class Device(DefaultDelegate):
 
     def connect(self):
         if self.scan_timeout:
-            self.__wait_until_seen()
+            if not self.__wait_until_seen():
+                raise BTLEDisconnectError(
+                    f"Did not see {self.mac} while scanning on hci{self.iface}"
+                )
         self.__peripheral = Peripheral(self.mac, self.addr_type, self.iface)
         self.__peripheral.withDelegate(self)
 
@@ -21,7 +24,9 @@ class Device(DefaultDelegate):
         scanner = Scanner(self.iface)
         for device in scanner.scan(self.scan_timeout):
             if device.addr.lower() == self.mac.lower():
-                return
+                return True
+
+        return False
 
     def disconnect(self):
         if self.__peripheral:

@@ -1,7 +1,7 @@
 import sys
 import time
 
-from bluepy.btle import DefaultDelegate, Peripheral, Scanner
+from bluepy.btle import BTLEException, DefaultDelegate, Peripheral, Scanner
 
 
 class DebugDelegate(DefaultDelegate):
@@ -26,14 +26,19 @@ def main():
 
     print(f"scanning on hci{iface} for {scan_timeout} seconds")
     seen = False
-    for scanned_device in Scanner(iface).scan(scan_timeout):
-        if scanned_device.addr.lower() == mac.lower():
-            seen = True
-            print(f"seen {mac} rssi={scanned_device.rssi}")
-            break
+    try:
+        for scanned_device in Scanner(iface).scan(scan_timeout):
+            if scanned_device.addr.lower() == mac.lower():
+                seen = True
+                print(f"seen {mac} rssi={scanned_device.rssi}")
+                break
+    except BTLEException as error:
+        print(f"scan failed on hci{iface}: {error}")
 
     if not seen:
         print(f"did not see {mac}; press a button on the remote and try again")
+        print("not connecting because scan did not see the remote")
+        return
 
     print(f"connecting on hci{iface}")
     device = Peripheral(mac, "public", iface)
