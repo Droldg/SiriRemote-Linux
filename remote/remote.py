@@ -78,11 +78,13 @@ class SiriRemote:
             magic_with_response: bool = True,
             addr_type: str = "public",
             scan_timeout: float = 5.0,
-            magic_value: bytes = None
+            magic_value: bytes = None,
+            iface: int = 0
     ):
         self.__mac = mac
         self.__addr_type = addr_type
         self.__scan_timeout = scan_timeout
+        self.__iface = iface
         self.__device = None
         self.__listener = listener
         self.__generation = generation
@@ -109,8 +111,9 @@ class SiriRemote:
             setup_step = "connecting"
             try:
                 self.__debug_log("connecting")
-                self.__device = bt.Device(self.__mac, self.__addr_type, self.__scan_timeout)
+                self.__device = bt.Device(self.__mac, self.__addr_type, self.__scan_timeout, self.__iface)
                 self.__device.connect()
+                self.__debug_log("connected")
                 setup_step = "setting mtu"
                 self.__debug_log("setting mtu")
                 self.__device.set_mtu(self.__profile["mtu"])

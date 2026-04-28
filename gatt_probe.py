@@ -11,11 +11,15 @@ class DebugDelegate(DefaultDelegate):
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: python gatt_probe.py <mac>")
+        print("usage: python gatt_probe.py <mac> [--iface=0]")
         return
 
-    mac = sys.argv[1]
-    device = Peripheral(mac)
+    iface = next(
+        (int(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--iface=")),
+        0
+    )
+    mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
+    device = Peripheral(mac, "public", iface)
     device.withDelegate(DebugDelegate())
 
     print("connected")

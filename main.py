@@ -153,6 +153,10 @@ if __name__ == '__main__':
                 (bytes.fromhex(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--magic=")),
                 None
             )
+            iface = next(
+                (int(arg.split("=", 1)[1]) for arg in sys.argv if arg.startswith("--iface=")),
+                0
+            )
             mac = next(arg for arg in sys.argv[1:] if not arg.startswith("--"))
             print("Forbinder til fjernbetjening...", flush=True)
             SiriRemote(
@@ -162,7 +166,8 @@ if __name__ == '__main__':
                 magic_with_response,
                 addr_type,
                 5.0,
-                magic_value
+                magic_value,
+                iface
             )
         else:
             print("error: no mac address")
