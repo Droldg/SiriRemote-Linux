@@ -49,13 +49,16 @@ def main():
 
     print("connected")
     print("relevant characteristics:")
-    for characteristic in device.getCharacteristics():
-        handle = characteristic.getHandle()
-        if handle in (0x001d, 0x0023, 0x0028, 0x002b):
-            print(
-                f"handle=0x{handle:04x} uuid={characteristic.uuid} "
-                f"properties={characteristic.propertiesToString()}"
-            )
+    try:
+        for characteristic in device.getCharacteristics():
+            handle = characteristic.getHandle()
+            if handle in (0x001d, 0x0023, 0x0028, 0x002b):
+                print(
+                    f"handle=0x{handle:04x} uuid={characteristic.uuid} "
+                    f"properties={characteristic.propertiesToString()}"
+                )
+    except BTLEException as error:
+        print(f"service discovery failed, continuing with known handles: {error}")
 
     writes = [
         ("battery notify", 0x0029, b"\x01\x00", True),
